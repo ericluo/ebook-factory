@@ -1,22 +1,19 @@
-import os
+from pathlib import Path 
 from ebooklib import epub
 import markdown
 
-mds_path = os.path.curdir
-# Create a new epub book
+mds_path = Path.cwd 
 book = epub.EpubBook()
 
 # Convert multiple markdown files to chapters
 def convert_mds_to_chapters():
     # Loop through all markdown files in the folder
-    md_files = enumerate(filter(lambda x: x.endswith('.md'), os.listdir(mds_path)))
-    for i, md_file_name in md_files:
-        f = os.path.join(mds_path, md_file_name)
+    for i, f in enumerate(mds_path.glob('*.md')):
         with open(f, 'r', encoding='utf-8') as md_file:
             md_content = md_file.read()
         html_content = markdown.markdown(md_content, extensions=['extra'])
-        chapter_title = os.path.splitext(os.path.basename(md_file_name))[0]
-        chapter = epub.EpubHtml(title=f'Chapter {i+1} {chapter_title}', 
+        title = f.stem
+        chapter = epub.EpubHtml(title=f'Chapter {i+1} {title}', 
                                 file_name=f'chapter_{i+1}.xhtml',
                                 content = html_content)
 
@@ -30,17 +27,17 @@ def convert_mds_to_chapters():
 # Convert multiple markdown files to a single epub book
 def convert_mds_to_epub(input_dir, out_file):
     global mds_path 
-    mds_path = input_dir
-    epub_file = out_file
+    mds_path = Path(input_dir)
+    epub_file = Path(out_file) 
 
     # Set the title of the book
-    book.set_title(os.path.splitext(os.path.basename(epub_file))[0])
+    book.set_title(epub_file.stem)
     book.set_language('zh')
     # Add a table of contents
     book.toc = []
 
     cover_file = 'cover.jpg'
-    book.set_cover(cover_file, content=os.path.join(mds_path, cover_file))
+    book.set_cover(cover_file, content=mds_path.joinpath(cover_file).read_bytes()))
     book.add_author('Eric Luo')
 
     # from pygments.formatters import HtmlFormatter
@@ -70,10 +67,10 @@ if __name__ == "__main__":
     parser.add_argument('out_file', type=str, help='the output epub file name')
     args = parser.parse_args()
     try:
-        if not os.path.exists(args.input_dir):
+        if not Path.exists(args.input_dir):
             raise FileNotFoundError(f"Input directory {args.input_dir} not found.")
-        if os.path.exists(args.out_file):
-            os.remove(args.out_file)
+        if Path.exists(args.out_file):
+           Path.unlink(args.out_file)
     except Exception as e:
         print(f"Error accessing file: {e}")
         sys.exit()
